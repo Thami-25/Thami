@@ -168,6 +168,9 @@ def carregar_roteiro():
         # Cancelamento nao e utilizado como filtro
 
         df["_id"]       = df[col_id].astype(str).str.strip().str.lstrip("0")
+        # DEBUG
+        st.sidebar.markdown(f"**DEBUG Roteiro:** col_id={col_id}")
+        st.sidebar.markdown(f"Exemplo IDs roteiro: {df['_id'].head(5).tolist()}")
         df["_nome"]     = df[col_nome].astype(str).str.strip() if col_nome else ""
         df["_bairro"]   = df[col_bairro].astype(str).str.strip() if col_bairro else ""
         df["_cidade"]   = df[col_cidade].astype(str).str.strip() if col_cidade else ""
@@ -205,6 +208,11 @@ def carregar_vendas():
             s = f"{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
             return f"R$ {s}"
 
+        # DEBUG
+        ids_vendas = set(df["_id"].tolist())
+        st.sidebar.markdown(f"**DEBUG Vendas:** {len(ids_vendas)} clientes únicos")
+        st.sidebar.markdown(f"Exemplo IDs vendas: {list(ids_vendas)[:5]}")
+        
         resumo = {}
         for sid, grp in df.groupby("_id"):
             imp    = int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_cx"].sum())
