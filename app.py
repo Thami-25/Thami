@@ -68,9 +68,19 @@ def safe_int(v):
     try: return int(float(str(v).replace(",",".")))
     except: return 0
 
+def parse_valor(v):
+    import re
+    try:
+        s = str(v).replace("R$","").strip()
+        s = re.sub(r'\.(?=\d{3})', '', s)
+        s = s.replace(",",".")
+        return float(s)
+    except:
+        return 0.0
+
 def is_devedor(v):
     try:
-        return float(str(v).replace("R$","").replace(".","").replace(",",".").strip()) > 0
+        return parse_valor(v) > 0
     except:
         return str(v).lower().strip() in ["sim","s","yes","devedor"]
 
@@ -98,7 +108,7 @@ def calc_ruptura(dfv):
     sem_kv   = len(dfv[rupt_str.str.contains("sem kv", na=False)])
     em_rupt  = len(dfv[~nao_rupt])
     denom    = total - novo - sem_kv
-    pct      = round((1 - c_compra / denom) * 100, 1) if denom > 0 else 0
+    pct      = round((1 - c_compra / denom) * 100, 1) if denom > 0 else 0.0
     return total, em_rupt, pct
 
 def cor_ruptura(pct):
@@ -140,8 +150,7 @@ def carregar_roteiro():
         col_rupt   = achar_col(df, ["ruptura"])
         col_dev    = achar_col(df, ["devedor"])
 
-        if col_cancel:
-            df = df[df[col_cancel].astype(str).str.strip() == "Ativo"]
+        # Cancelamento nao e utilizado como filtro
 
         df["_id"]       = df[col_id].astype(str).str.strip()
         df["_nome"]     = df[col_nome].astype(str).str.strip() if col_nome else ""
@@ -318,10 +327,11 @@ elif st.session_state.tela == "painel":
 
             dev_ok  = is_devedor(dev)
             card_cls = "card dev" if dev_ok else ("card sem-compra" if not comprou else "card")
-            try:
-                val_dev = float(str(dev).replace("R$","").replace(".","").replace(",",".").strip())
-                dev_txt = f"Devedor: R$ {val_dev:,.2f}".replace(",","X").replace(".",",").replace("X",".") if val_dev > 0 else "Devedor"
-            except:
+            val_dev = parse_valor(dev)
+            if val_dev > 0:
+                dev_txt = f"Devedor: R$ {val_dev:_.2f}".replace("_",".")
+                dev_txt = dev_txt[:dev_txt.rfind(".")] .replace(".",",") + dev_txt[dev_txt.rfind("."):]
+            else:
                 dev_txt = "Devedor"
             dev_bdg  = f'<span class="bdg devedor">{dev_txt}</span>' if dev_ok else ""
             comp_bdg = '<span class="bdg comprou">Comprou este mês</span>' if comprou else ""
