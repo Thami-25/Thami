@@ -122,9 +122,9 @@ def carregar_dados():
     try:
         df = pd.read_csv(URL)
         df.columns = df.columns.str.strip()
-        df = df.dropna(subset=["Código Cliente"])
-        df = df[df["Código Cliente"].astype(str).str.strip().str.len() > 0]
-        df["Código Cliente"] = df["Código Cliente"].astype(str).str.strip()
+        df = df.dropna(subset=["Código do Cliente"])
+        df = df[df["Código do Cliente"].astype(str).str.strip().str.len() > 0]
+        df["Código do Cliente"] = df["Código do Cliente"].astype(str).str.strip()
         return df, None
     except Exception as e:
         return None, str(e)
