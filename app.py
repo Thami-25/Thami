@@ -196,12 +196,24 @@ if st.session_state.tela == "selecao":
             (dfv["_freq"].apply(lambda f: visita_hoje(f, semana_hoje)))
         ])
         total = len(dfv)
+        c_compra  = len(dfv[dfv["_ruptura"].str.lower().str.contains("c/ compra|c/compra", na=False)])
+        novo      = len(dfv[dfv["_ruptura"].str.lower().str.contains("cliente novo|novo", na=False)])
+        sem_kv    = len(dfv[dfv["_ruptura"].str.lower().str.contains("sem kv", na=False)])
+        em_rupt   = total - c_compra - novo - sem_kv
+        pct_rupt  = round((em_rupt / total * 100)) if total > 0 else 0
+        cor_rupt  = "#DC2626" if pct_rupt >= 50 else ("#F59E0B" if pct_rupt >= 30 else "#16A34A")
         col1, col2 = st.columns([5,1])
         with col1:
             st.markdown(f"""
             <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:14px 16px;margin-bottom:8px;">
               <div class="sel-nome">{v}</div>
               <div class="sel-sub">{hoje_count} visitas hoje · {total} clientes na carteira</div>
+              <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:4px;background:#E2E8F0;border-radius:2px;overflow:hidden;">
+                  <div style="width:{pct_rupt}%;height:100%;background:{cor_rupt};border-radius:2px;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:{cor_rupt};">{pct_rupt}% ruptura</span>
+              </div>
             </div>""", unsafe_allow_html=True)
         with col2:
             st.markdown("<div style='margin-top:8px;'>", unsafe_allow_html=True)
@@ -226,12 +238,25 @@ elif st.session_state.tela == "painel":
     imp_total = sum(vendas.get(i,{}).get("impulso",0) for i in todos_ids)
     th_total  = sum(vendas.get(i,{}).get("th",0) for i in todos_ids)
     n_rupt    = len(dfv[~dfv["_ruptura"].isin(["C/ Compra","c/ compra","","nan","-","None"])])
-    n_dev     = len(dfv[dfv["_devedor"].astype(str).str.lower().str.strip().isin(["sim","s","yes","devedor"])])
+    def is_devedor(v):
+    try:
+        return float(str(v).replace("R$","").replace(".","").replace(",",".").strip()) > 0
+    except:
+        return str(v).lower().strip() in ["sim","s","yes","devedor"]
+    
+    n_dev     = len(dfv[dfv["_devedor"].apply(is_devedor)])
+
+    total_v   = len(dfv)
+    c_compra_v = len(dfv[dfv["_ruptura"].str.lower().str.contains("c/ compra|c/compra", na=False)])
+    novo_v    = len(dfv[dfv["_ruptura"].str.lower().str.contains("cliente novo|novo", na=False)])
+    sem_kv_v  = len(dfv[dfv["_ruptura"].str.lower().str.contains("sem kv", na=False)])
+    em_rupt_v = total_v - c_compra_v - novo_v - sem_kv_v
+    pct_rupt_v = round((em_rupt_v / total_v * 100)) if total_v > 0 else 0
 
     st.markdown(f"""
     <div class="topbar">
       <div class="nome">{vend}</div>
-      <div class="sub">{len(clientes_hoje)} visitas hoje · Semana {semana_hoje}</div>
+      <div class="sub">{len(clientes_hoje)} visitas hoje · Semana {semana_hoje} · Ruptura: {pct_rupt_v}%</div>
     </div>
     <div class="metrics">
       <div class="mbox {'verde' if imp_total>0 else 'alerta'}">
@@ -244,10 +269,10 @@ elif st.session_state.tela == "painel":
         <div class="val">{th_total}</div>
         <div class="sub2">caixas vendidas</div>
       </div>
-      <div class="mbox {'alerta' if n_rupt>0 else 'verde'}">
-        <div class="lbl">Em ruptura</div>
-        <div class="val">{n_rupt}</div>
-        <div class="sub2">clientes</div>
+      <div class="mbox {'alerta' if pct_rupt_v>=50 else ('alerta' if pct_rupt_v>=30 else 'verde')}">
+        <div class="lbl">% Ruptura</div>
+        <div class="val">{pct_rupt_v}%</div>
+        <div class="sub2">{em_rupt_v} de {total_v} clientes</div>
       </div>
       <div class="mbox {'alerta' if n_dev>0 else 'verde'}">
         <div class="lbl">Devedores</div>
@@ -273,7 +298,11 @@ elif st.session_state.tela == "painel":
             th    = vd.get("th", 0)
             comprou = vd.get("comprou", False)
 
-            is_dev = str(dev).lower().strip() in ["sim","s","yes","devedor"]
+            try:
+                val_dev = float(str(dev).replace("R$","").replace(".","").replace(",",".").strip())
+                is_dev = val_dev > 0
+            except:
+                is_dev = str(dev).lower().strip() in ["sim","s","yes","devedor"]
             card_cls = "card dev" if is_dev else ("card sem-compra" if not comprou else "card")
 
             dev_badge = '<span class="bdg devedor">Devedor</span>' if is_dev else ""
