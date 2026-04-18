@@ -89,8 +89,7 @@ def calc_ruptura(dfv):
     total    = len(dfv)
     c_compra = len(dfv[dfv["_ruptura"].str.lower().str.contains("c/ compra|c/compra", na=False)])
     novo     = len(dfv[dfv["_ruptura"].str.lower().str.contains("cliente novo", na=False)])
-    sem_kv   = len(dfv[dfv["_ruptura"].str.lower().str.contains("sem kv", na=False)])
-    em_rupt  = max(0, total - c_compra - novo - sem_kv)
+    em_rupt  = max(0, total - c_compra - novo)
     pct      = round(em_rupt / total * 100) if total > 0 else 0
     return total, em_rupt, pct
 
@@ -311,7 +310,12 @@ elif st.session_state.tela == "painel":
 
             dev_ok  = is_devedor(dev)
             card_cls = "card dev" if dev_ok else ("card sem-compra" if not comprou else "card")
-            dev_bdg  = '<span class="bdg devedor">Devedor</span>' if dev_ok else ""
+            try:
+                val_dev = float(str(dev).replace("R$","").replace(".","").replace(",",".").strip())
+                dev_txt = f"Devedor: R$ {val_dev:,.2f}".replace(",","X").replace(".",",").replace("X",".") if val_dev > 0 else "Devedor"
+            except:
+                dev_txt = "Devedor"
+            dev_bdg  = f'<span class="bdg devedor">{dev_txt}</span>' if dev_ok else ""
             comp_bdg = '<span class="bdg comprou">Comprou este mês</span>' if comprou else ""
             imp_cls  = "stv v" if imp > 0 else "stv z"
             th_cls   = "stv v" if th  > 0 else "stv z"
