@@ -524,7 +524,7 @@ elif st.session_state.tela == "painel":
   </div>
 </div>""", unsafe_allow_html=True)
 
-    aba_hoje, aba_ontem, aba_semana, aba_rupt = st.tabs(["Hoje", "Ontem", "Semana toda", "📋 Ruptura"])
+    aba_hoje, aba_ontem, aba_semana, aba_rupt = st.tabs(["Hoje", "Ontem", "Semana toda", "📋 Base de clientes"])
 
     with aba_hoje:
         render_clientes(clientes_hoje, f"Roteiro de hoje · {dia_hoje}")
@@ -541,38 +541,38 @@ elif st.session_state.tela == "painel":
                 render_clientes(cl, dia)
 
     with aba_rupt:
-        st.markdown('<div class="slbl">Todos os clientes em ruptura</div>', unsafe_allow_html=True)
-        RUPT_ORDER = ["> 6 Meses","6 Meses","5 Meses","4 Meses","3 Meses","2 Meses","1 Mês","SEM KV"]
+        st.markdown('<div class="slbl">Base de clientes</div>', unsafe_allow_html=True)
         RUPT_CLS_MAP = {"> 6 Meses":"rupt3","6 Meses":"rupt3","5 Meses":"rupt3",
                         "4 Meses":"rupt3","3 Meses":"rupt3","2 Meses":"rupt2",
-                        "1 Mês":"rupt1","SEM KV":"rupt2"}
+                        "1 Mês":"rupt1","SEM KV":"rupt2","C/ Compra":"rupt0",
+                        "c/ compra":"rupt0","c/compra":"rupt0","Cliente Novo":"rupt0"}
 
-        df_em_rupt = dfv[~dfv["_ruptura"].astype(str).str.strip().str.lower().apply(
-            lambda x: any(p in x for p in ["c/ compra","c/compra","cliente novo"]) or x in ["","nan","none","-"]
-        )].copy()
+        # All clients sorted by city
+        df_base = dfv.copy()
+        df_base = df_base.sort_values(["_cidade","_nome"])
 
-        # Sort by ruptura severity
-        df_em_rupt["_rupt_ord"] = df_em_rupt["_ruptura"].astype(str).str.strip().apply(
-            lambda x: RUPT_ORDER.index(x) if x in RUPT_ORDER else 99
-        )
-        df_em_rupt = df_em_rupt.sort_values("_rupt_ord")
+        st.markdown(f'<div style="font-size:12px;color:#64748B;margin-bottom:8px;">{len(df_base)} clientes</div>', unsafe_allow_html=True)
 
-        if df_em_rupt.empty:
-            st.success("Nenhum cliente em ruptura! 🎉")
-        else:
-            st.markdown(f'<div style="font-size:12px;color:#64748B;margin-bottom:8px;">{len(df_em_rupt)} clientes sem compra</div>', unsafe_allow_html=True)
-            for _, row in df_em_rupt.iterrows():
-                rupt  = str(row["_ruptura"]).strip()
-                cls   = RUPT_CLS_MAP.get(rupt, "rupt2")
-                sid   = row["_id"]
-                nome  = row["_nome"]
-                st.markdown(f"""
+        cidade_atual = ""
+        for _, row in df_base.iterrows():
+            sid    = row["_id"]
+            nome   = row["_nome"]
+            cidade = row["_cidade"]
+            bairro = row["_bairro"]
+            rupt   = str(row["_ruptura"]).strip()
+            cls    = RUPT_CLS_MAP.get(rupt, "rupt2")
+
+            if cidade != cidade_atual:
+                cidade_atual = cidade
+                st.markdown(f'<div class="slbl" style="margin-top:12px;">{cidade}</div>', unsafe_allow_html=True)
+
+            st.markdown(f"""
 <div style="background:#fff;border:1px solid #E0F7FA;border-radius:10px;padding:10px 14px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;">
   <div>
     <div style="font-size:13px;font-weight:600;color:#1A1A2E;">{nome}</div>
-    <div style="font-size:11px;color:#94A3B8;">#{sid}</div>
+    <div style="font-size:11px;color:#94A3B8;">{bairro} · #{sid}</div>
   </div>
-  <span class="bdg {cls}">{rupt}</span>
+  <span class="bdg {cls}">{rupt if rupt not in ["","nan","none","-"] else "—"}</span>
 </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
