@@ -91,8 +91,8 @@ def calc_ruptura(dfv):
     novo     = len(dfv[dfv["_ruptura"].str.lower().str.contains("cliente novo", na=False)])
     sem_kv   = len(dfv[dfv["_ruptura"].str.lower().str.contains("sem kv", na=False)])
     denom    = total - novo - sem_kv
-    em_rupt  = max(0, total - c_compra - novo - sem_kv)
-    pct      = round(em_rupt / denom * 100, 1) if denom > 0 else 0
+    em_rupt  = max(0, denom - c_compra)
+    pct      = round((1 - c_compra / denom) * 100, 1) if denom > 0 else 0
     return total, em_rupt, pct
 
 def cor_ruptura(pct):
@@ -283,7 +283,7 @@ elif st.session_state.tela == "painel":
       <div class="mbox {cls}">
         <div class="lbl">% Ruptura</div>
         <div class="val" style="color:{cor};">{pct_rupt}%</div>
-        <div class="sub2">{em_rupt} de {total} clientes</div>
+        <div class="sub2">{em_rupt} clientes sem compra</div>
         <div class="prog"><div class="progf" style="width:{pct_rupt}%;background:{cor};"></div></div>
       </div>
       <div class="mbox {'alerta' if n_dev>0 else 'verde'}">
