@@ -172,13 +172,17 @@ def carregar_roteiro():
         url = "https://docs.google.com/spreadsheets/d/1ewXcWuiLOCtv609Y-xKKg-qQwOuu21Bq/export?format=xlsx"
         import requests, io
         r = requests.get(url)
-        df = pd.read_excel(io.BytesIO(r.content), sheet_name=0, engine="openpyxl")
+        df = pd.read_excel(io.BytesIO(r.content), sheet_name="BASE ATIVA - ROTEIRIZADA", engine="openpyxl")
         df.columns = df.columns.str.strip()
-        df["Sold"] = df["Sold"].astype(str).str.strip()
-        df["Vendedor"] = df["Vendedor"].str.strip()
-        df["Dia da Semana"] = df["Dia da Semana"].str.strip()
+        df = df[df["Cancelamento"].astype(str).str.strip() == "Ativo"]
+        df["Sold"] = df["Customer Number"].astype(str).str.strip()
+        df["Razão Social"] = df["Customer Name"].astype(str).str.strip()
+        df["Bairro"] = df["Address Line 4"].astype(str).str.strip()
+        df["Cidade"] = df["City"].astype(str).str.strip()
+        df["Vendedor"] = df["Vendedor"].astype(str).str.strip()
+        df["Dia da Semana"] = df["Dia da Semana"].astype(str).str.strip()
         df["Frequência"] = df["Frequência"].astype(str).str.strip()
-        df["Nome Vendedor"] = df["Vendedor"].map(lambda x: next((v for k,v in VENDEDORES.items() if k.strip() in x.strip()), x.strip()))
+        df["Nome Vendedor"] = df["Vendedor"].astype(str).str.strip()
         return df, None
     except Exception as e:
         return None, str(e)
@@ -206,12 +210,13 @@ if st.session_state.tela == "selecao":
     </div>
     """, unsafe_allow_html=True)
 
-    vendedores_unicos = df_rot[["Vendedor","Nome Vendedor"]].drop_duplicates()
+    vendedores_unicos = df_rot[["Nome Vendedor"]].drop_duplicates().rename(columns={"Nome Vendedor":"Vendedor"})
+    vendedores_unicos["Nome Vendedor"] = vendedores_unicos["Vendedor"]
 
     for _, row in vendedores_unicos.iterrows():
         cod  = row["Vendedor"]
         nome = row["Nome Vendedor"]
-        df_v = df_rot[df_rot["Vendedor"] == cod]
+        df_v = df_rot[df_rot["Nome Vendedor"] == cod]
         clientes_hoje = df_v[
             (df_v["Dia da Semana"] == dia_hoje) &
             (df_v["Frequência"].apply(lambda f: cliente_visita_hoje(f, dia_hoje, semana_hoje)))
@@ -227,7 +232,7 @@ if st.session_state.tela == "selecao":
         with col2:
             st.markdown("<div style='margin-top:8px;'>", unsafe_allow_html=True)
             if st.button("Entrar", key=f"v_{cod}"):
-                st.session_state.vendedor_codigo = cod
+                st.session_state.vendedor_codigo = nome
                 st.session_state.vendedor_nome = nome
                 st.session_state.tela = "painel"
                 st.rerun()
@@ -235,7 +240,7 @@ if st.session_state.tela == "selecao":
 elif st.session_state.tela == "painel":
     cod  = st.session_state.vendedor_codigo
     nome = st.session_state.vendedor_nome
-    df_v = df_rot[df_rot["Vendedor"] == cod]
+    df_v = df_rot[df_rot["Nome Vendedor"] == cod]
 
     clientes_hoje = df_v[
         (df_v["Dia da Semana"] == dia_hoje) &
