@@ -174,11 +174,19 @@ def carregar_roteiro():
         r = requests.get(url)
         df = pd.read_excel(io.BytesIO(r.content), sheet_name="BASE ATIVA - ROTEIRIZADA", engine="openpyxl")
         df.columns = df.columns.str.strip()
-        df = df[df["Cancelamento"].astype(str).str.strip() == "Ativo"]
-        df["Sold"] = df["Customer Number"].astype(str).str.strip()
-        df["Razão Social"] = df["Customer Name"].astype(str).str.strip()
-        df["Bairro"] = df["Address Line 4"].astype(str).str.strip()
-        df["Cidade"] = df["City"].astype(str).str.strip()
+        if col_cancel and col_cancel in df.columns:
+            df = df[df[col_cancel].astype(str).str.strip() == "Ativo"]
+        col0 = df.columns[0]
+        col1 = df.columns[1]
+        col_bairro = next((c for c in df.columns if any(x in c.lower() for x in ["address line 4","address 4","bairro","linha 4","endereco 4","endereço 4"])), df.columns[3])
+        col_cidade = next((c for c in df.columns if any(x in c.lower() for x in ["city","cidade"])), df.columns[4])
+        col_cancel = next((c for c in df.columns if any(x in c.lower() for x in ["cancelamento","cancel","status"])), None)
+        if col_cancel and col_cancel in df.columns:
+            df = df[df[col_cancel].astype(str).str.strip() == "Ativo"]
+        df["Sold"] = df[col0].astype(str).str.strip()
+        df["Razão Social"] = df[col1].astype(str).str.strip()
+        df["Bairro"] = df[col_bairro].astype(str).str.strip()
+        df["Cidade"] = df[col_cidade].astype(str).str.strip()
         df["Vendedor"] = df["Vendedor"].astype(str).str.strip()
         df["Dia da Semana"] = df["Dia da Semana"].astype(str).str.strip()
         df["Frequência"] = df["Frequência"].astype(str).str.strip()
