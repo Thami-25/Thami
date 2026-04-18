@@ -77,7 +77,7 @@ def pbar(pct, cor):
     return f'<div class="prog"><div class="progf" style="width:{p:.0f}%;background:{cor};"></div></div>'
 
 def card_html(row):
-    dev   = safe_float(row.get("Devedor Valor R$",""))
+    dev   = safe_float(row.get("Devedor Valor R$", row.get("Devedor Valor R$".strip(), "")))
     pic   = str(row.get("Picolé Campanha","Não")).strip()
     tipo  = str(row.get("Tipo Contrato","")).strip()
     rupt  = str(row.get("Ruptura (tipo)","")).strip()
@@ -190,8 +190,8 @@ elif st.session_state.tela == "painel":
     pct_imp  = (imp_real/imp_obj*100) if imp_obj > 0 else 0
     pct_th   = (th_real/th_obj*100)   if th_obj  > 0 else 0
     n_rupt   = int((df["Impulso Obj."].fillna(0).astype(float) > df["Impulso Real."].fillna(0).astype(float)).sum())
-    picoles  = int((df["Picolé Campanha"].fillna("Não").str.strip() == "Sim").sum())
-    devedores= df[df["Devedor Valor R$"].fillna(0).astype(float) > 0]
+    picoles  = int((df["Picolé Campanha"].fillna("Não").str.strip() == "Sim" if "Picolé Campanha" in df.columns else pd.Series([False]*len(df))).sum())
+    devedores= df[df.get('Devedor Valor R$', pd.Series(dtype=float)).fillna(0).astype(float) > 0] if 'Devedor Valor R$' in df.columns else df.iloc[0:0]
     ci = "verde" if pct_imp >= 75 else "alerta"
     ct = "verde" if pct_th  >= 75 else "alerta"
     ci_cor = "#1D9E75" if pct_imp >= 75 else "#DC2626"
