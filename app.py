@@ -200,15 +200,17 @@ def carregar_vendas():
         df["_cat"]    = df[col_cat].astype(str).str.strip().str.upper() if col_cat else ""
         df["_caixas"] = df[col_caixas].apply(safe_int) if col_caixas else 0
 
-        df = df[df["_status"] == "VENDA"]
+        df_vd = df[df["_status"] == "VENDA"]
+        df_dv = df[df["_status"] == "DEVOLUÇÃO"]
 
         resumo = {}
-        for sid, grp in df.groupby("_id"):
-            resumo[sid] = {
-                "impulso": int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum()),
-                "th":      int(grp[grp["_cat"].str.contains("TAKE HOME|TH", na=False)]["_caixas"].sum()),
-                "comprou": True
-            }
+        todos_ids = set(df_vd["_id"].tolist())
+        for sid in todos_ids:
+            grp_v = df_vd[df_vd["_id"] == sid]
+            grp_d = df_dv[df_dv["_id"] == sid]
+            imp = int(grp_v[grp_v["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum()) -                   int(grp_d[grp_d["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum())
+            th  = int(grp_v[grp_v["_cat"].str.contains("TAKE HOME|TH", na=False)]["_caixas"].sum()) -                   int(grp_d[grp_d["_cat"].str.contains("TAKE HOME|TH", na=False)]["_caixas"].sum())
+            resumo[sid] = {"impulso": imp, "th": th, "comprou": True}
         return resumo, None
     except Exception as e:
         return {}, str(e)
@@ -338,13 +340,19 @@ elif st.session_state.tela == "resumo":
         dfr["_c"]  = dfr[cc].astype(str).str.upper().str.strip() if cc else ""
         dfr["_cx"] = dfr[ccx].apply(safe_int) if ccx else 0
         dfr["_vl"] = dfr[cvl].apply(parse_valor) if cvl else 0.0
-        dfr = dfr[dfr["_s"] == "VENDA"]
+        # Venda = VENDA - DEVOLUÇÃO (caixas e valor)
+        df_venda = dfr[dfr["_s"] == "VENDA"]
+        df_devo  = dfr[dfr["_s"] == "DEVOLUÇÃO"]
 
-        imp = dfr[dfr["_c"].str.contains("IMPULSO", na=False)]
-        th  = dfr[dfr["_c"].str.contains("TAKE HOME|TH", na=False)]
+        imp_venda = df_venda[df_venda["_c"].str.contains("IMPULSO", na=False)]
+        imp_devo  = df_devo[df_devo["_c"].str.contains("IMPULSO", na=False)]
+        th_venda  = df_venda[df_venda["_c"].str.contains("TAKE HOME|TH", na=False)]
+        th_devo   = df_devo[df_devo["_c"].str.contains("TAKE HOME|TH", na=False)]
 
-        imp_cx = int(imp["_cx"].sum()); imp_vl = imp["_vl"].sum()
-        th_cx  = int(th["_cx"].sum());  th_vl  = th["_vl"].sum()
+        imp_cx = int(imp_venda["_cx"].sum()) - int(imp_devo["_cx"].sum())
+        imp_vl = imp_venda["_vl"].sum() - imp_devo["_vl"].sum()
+        th_cx  = int(th_venda["_cx"].sum()) - int(th_devo["_cx"].sum())
+        th_vl  = th_venda["_vl"].sum() - th_devo["_vl"].sum()
         tot_cx = imp_cx + th_cx;        tot_vl = imp_vl + th_vl
 
         st.markdown('<div class="slbl">Vendas do mês</div>', unsafe_allow_html=True)
