@@ -515,7 +515,7 @@ elif st.session_state.tela == "painel":
   <div class="cinfo">{bairro} · {cidade} · #{sid}</div>
   <div class="bdgs">{badge_ruptura(rupt)}{dev_bdg}{comp_bdg}</div>
   <div class="srow">
-    <div class="st2"><span class="stl">Impulso</span><span class="{imp_cls}">{fmt_brl_v(vd.get("imp_vl",0))}</span></div>
+    <div class="st2"><span class="stl">Impulso</span><span class="{imp_cls}">{imp} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("imp_vl",0))}</span></div>
     <div class="st2"><span class="stl">Take Home</span><span class="{th_cls}">{th} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("th_vl",0))}</span></div>
     <div class="st2" style="border-left:1px solid #E0F7FA;">
       <span class="stl">Total</span>
