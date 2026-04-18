@@ -167,10 +167,12 @@ def carregar_roteiro():
 
         # Cancelamento nao e utilizado como filtro
 
-        df["_id"]       = df[col_id].astype(str).str.strip().str.lstrip("0")
-        # DEBUG
-        st.sidebar.markdown(f"**DEBUG Roteiro:** col_id={col_id}")
-        st.sidebar.markdown(f"Exemplo IDs roteiro: {df['_id'].head(5).tolist()}")
+        def normaliza_id_rot(v):
+            try:
+                return str(int(float(str(v).strip())))
+            except:
+                return str(v).strip()
+        df["_id"]       = df[col_id].apply(normaliza_id_rot)
         df["_nome"]     = df[col_nome].astype(str).str.strip() if col_nome else ""
         df["_bairro"]   = df[col_bairro].astype(str).str.strip() if col_bairro else ""
         df["_cidade"]   = df[col_cidade].astype(str).str.strip() if col_cidade else ""
@@ -193,26 +195,29 @@ def carregar_vendas():
         df.columns = df.columns.str.strip()
         df = df.dropna(how="all")
 
-        col_id     = achar_col(df, ["sold","customer nu","numero","número","codigo","código"]) or df.columns[0]
         col_status = achar_col(df, ["status"])
         col_cat    = achar_col(df, ["categoria","category"])
         col_caixas = achar_col(df, ["somadecaixas","caixas","qtd"])
+        col_valor  = achar_col(df, ["somadevalor nf","valor nf","somadevalornf"])
 
-        df["_id"]     = df[col_id].astype(str).str.strip().str.lstrip("0")
+        # Sold sempre na coluna A (índice 0), converter para int para garantir match
+        def normaliza_id(v):
+            try:
+                return str(int(float(str(v).strip())))
+            except:
+                return str(v).strip()
+
+        df["_id"]     = df.iloc[:, 0].apply(normaliza_id)
         df["_status"] = df[col_status].astype(str).str.strip() if col_status else "VENDA"
         df["_cat"]    = df[col_cat].astype(str).str.strip().str.upper() if col_cat else ""
-        df["_caixas"] = df[col_caixas].apply(safe_int) if col_caixas else 0
+        df["_cx"]     = df[col_caixas].apply(safe_int) if col_caixas else 0
+        df["_vl"]     = df[col_valor].apply(parse_valor) if col_valor else 0.0
 
         # Soma direta por cliente — devoluções já negativas
         def fmt_brl_v(v):
             s = f"{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
             return f"R$ {s}"
 
-        # DEBUG
-        ids_vendas = set(df["_id"].tolist())
-        st.sidebar.markdown(f"**DEBUG Vendas:** {len(ids_vendas)} clientes únicos")
-        st.sidebar.markdown(f"Exemplo IDs vendas: {list(ids_vendas)[:5]}")
-        
         resumo = {}
         for sid, grp in df.groupby("_id"):
             imp    = int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_cx"].sum())
@@ -510,12 +515,11 @@ elif st.session_state.tela == "painel":
   <div class="cinfo">{bairro} · {cidade} · #{sid}</div>
   <div class="bdgs">{badge_ruptura(rupt)}{dev_bdg}{comp_bdg}</div>
   <div class="srow">
-    <div class="st2"><span class="stl">Impulso</span><span class="{imp_cls}">{imp} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("imp_vl",0))}</span></div>
-    <div class="st2"><span class="stl">Take Home</span><span class="{th_cls}">{th} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("th_vl",0))}</span></div>
+    <div class="st2"><span class="stl">Impulso</span><span class="{imp_cls}">{fmt_brl_v(vd.get("imp_vl",0))}</span></div>
+    <div class="st2"><span class="stl">Take Home</span><span class="{th_cls}">{fmt_brl_v(vd.get("th_vl",0))}</span></div>
     <div class="st2" style="border-left:1px solid #E0F7FA;">
       <span class="stl">Total</span>
-      <span class="stv {'v' if imp+th>0 else 'z'}">{imp+th} cx</span>
-      <span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("imp_vl",0)+vd.get("th_vl",0))}</span>
+      <span class="stv {'v' if vd.get('imp_vl',0)+vd.get('th_vl',0)>0 else 'z'}">{fmt_brl_v(vd.get("imp_vl",0)+vd.get("th_vl",0))}</span>
     </div>
   </div>
 </div>""", unsafe_allow_html=True)
