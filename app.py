@@ -89,8 +89,10 @@ def calc_ruptura(dfv):
     total    = len(dfv)
     c_compra = len(dfv[dfv["_ruptura"].str.lower().str.contains("c/ compra|c/compra", na=False)])
     novo     = len(dfv[dfv["_ruptura"].str.lower().str.contains("cliente novo", na=False)])
-    em_rupt  = max(0, total - c_compra - novo)
-    pct      = round(em_rupt / total * 100) if total > 0 else 0
+    sem_kv   = len(dfv[dfv["_ruptura"].str.lower().str.contains("sem kv", na=False)])
+    denom    = total - novo - sem_kv
+    em_rupt  = max(0, total - c_compra - novo - sem_kv)
+    pct      = round(em_rupt / denom * 100, 1) if denom > 0 else 0
     return total, em_rupt, pct
 
 def cor_ruptura(pct):
