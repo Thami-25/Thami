@@ -88,12 +88,15 @@ def badge_ruptura(rupt):
 def calc_ruptura(dfv):
     total    = len(dfv)
     rupt_str = dfv["_ruptura"].astype(str).str.lower().str.strip()
+    # Nao ruptura: C/Compra e Cliente Novo
+    nao_rupt = rupt_str.apply(lambda x: 
+        any(p in x for p in ["c/ compra","c/compra","cliente novo","clientenovo"])
+        or x in ["","nan","none","-"]
+    )
     c_compra = len(dfv[rupt_str.str.contains("c/ compra|c/compra", na=False)])
     novo     = len(dfv[rupt_str.str.contains("cliente novo", na=False)])
     sem_kv   = len(dfv[rupt_str.str.contains("sem kv", na=False)])
-    # Numero absoluto: tudo que nao e C/Compra e nao e Cliente Novo (SEM KV entra)
-    em_rupt  = total - c_compra - novo
-    # Percentual igual Froneri: 1 - (C/Compra / (Total - Novo - SEM KV))
+    em_rupt  = len(dfv[~nao_rupt])
     denom    = total - novo - sem_kv
     pct      = round((1 - c_compra / denom) * 100, 1) if denom > 0 else 0
     return total, em_rupt, pct
