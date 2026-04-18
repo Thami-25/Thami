@@ -169,28 +169,41 @@ def carregar_vendas():
 @st.cache_data(ttl=3600)
 def carregar_roteiro():
     try:
-        url = "https://docs.google.com/spreadsheets/d/1ewXcWuiLOCtv609Y-xKKg-qQwOuu21Bq/export?format=xlsx"
         import requests, io
+        url = "https://docs.google.com/spreadsheets/d/1ewXcWuiLOCtv609Y-xKKg-qQwOuu21Bq/export?format=xlsx"
         r = requests.get(url)
-        df = pd.read_excel(io.BytesIO(r.content), sheet_name="BASE ATIVA - ROTEIRIZADA", engine="openpyxl")
+        df = pd.read_excel(io.BytesIO(r.content), sheet_name=1, engine="openpyxl")
         df.columns = df.columns.str.strip()
-        if col_cancel and col_cancel in df.columns:
+        df = df.dropna(how="all")
+
+        # Encontra colunas por posição ou nome parcial
+        def achar(nomes):
+            for n in nomes:
+                for c in df.columns:
+                    if n.lower() in str(c).lower():
+                        return c
+            return None
+
+        col_id     = achar(["customer nu","numero","número","sold"])   or df.columns[0]
+        col_nome   = achar(["customer name","razao","razão","nome"])   or df.columns[1]
+        col_bairro = achar(["address line 4","address 4","bairro"])    or df.columns[3]
+        col_cidade = achar(["city","cidade"])                          or df.columns[4]
+        col_dia    = achar(["dia da semana","dia"])
+        col_freq   = achar(["frequencia","frequência"])
+        col_vend   = achar(["vendedor"])
+        col_cancel = achar(["cancelamento","cancel"])
+
+        if col_cancel:
             df = df[df[col_cancel].astype(str).str.strip() == "Ativo"]
-        col0 = df.columns[0]
-        col1 = df.columns[1]
-        col_bairro = next((c for c in df.columns if any(x in c.lower() for x in ["address line 4","address 4","bairro","linha 4","endereco 4","endereço 4"])), df.columns[3])
-        col_cidade = next((c for c in df.columns if any(x in c.lower() for x in ["city","cidade"])), df.columns[4])
-        col_cancel = next((c for c in df.columns if any(x in c.lower() for x in ["cancelamento","cancel","status"])), None)
-        if col_cancel and col_cancel in df.columns:
-            df = df[df[col_cancel].astype(str).str.strip() == "Ativo"]
-        df["Sold"] = df[col0].astype(str).str.strip()
-        df["Razão Social"] = df[col1].astype(str).str.strip()
-        df["Bairro"] = df[col_bairro].astype(str).str.strip()
-        df["Cidade"] = df[col_cidade].astype(str).str.strip()
-        df["Vendedor"] = df["Vendedor"].astype(str).str.strip()
-        df["Dia da Semana"] = df["Dia da Semana"].astype(str).str.strip()
-        df["Frequência"] = df["Frequência"].astype(str).str.strip()
-        df["Nome Vendedor"] = df["Vendedor"].astype(str).str.strip()
+
+        df["Sold"]        = df[col_id].astype(str).str.strip()
+        df["Razão Social"] = df[col_nome].astype(str).str.strip()
+        df["Bairro"]      = df[col_bairro].astype(str).str.strip() if col_bairro else ""
+        df["Cidade"]      = df[col_cidade].astype(str).str.strip() if col_cidade else ""
+        df["Dia da Semana"] = df[col_dia].astype(str).str.strip() if col_dia else ""
+        df["Frequência"]  = df[col_freq].astype(str).str.strip() if col_freq else "1 2 3 4"
+        df["Nome Vendedor"] = df[col_vend].astype(str).str.strip() if col_vend else ""
+
         return df, None
     except Exception as e:
         return None, str(e)
