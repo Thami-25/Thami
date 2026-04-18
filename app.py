@@ -19,10 +19,10 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .topbar .nome { font-size:16px; font-weight:700; color:#006F8E; }
 .topbar .sub  { font-size:12px; color:#64748B; margin-top:3px; }
 .metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-.mbox { background:#F0FAFE; border:1.5px solid #00BCD4; border-radius:12px; padding:10px 12px; text-align:center; }
-.mbox .val { font-size:22px; font-weight:600; color:#1A1A2E; }
-.mbox .lbl { font-size:10px; color:#64748B; margin-top:2px; }
-.mbox .sub2 { font-size:10px; color:#94A3B8; }
+.mbox { background:#fff; border:1.5px solid #00BCD4; border-radius:12px; padding:12px 14px; text-align:center; }
+.mbox .val { font-size:26px; font-weight:700; color:#1A1A2E; }
+.mbox .lbl { font-size:12px; color:#64748B; margin-top:2px; font-weight:500; }
+.mbox .sub2 { font-size:11px; color:#94A3B8; }
 .mbox.alerta .val { color:#DC2626; }
 .mbox.verde  .val { color:#16A34A; }
 .mbox.amarelo .val { color:#D97706; }
@@ -32,7 +32,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .card { background:#fff; border:1.5px solid #E0F7FA; border-radius:14px; padding:13px 14px; margin-bottom:9px; }
 .card.dev { border-left:4px solid #DC2626; border-top:1.5px solid #E0F7FA; border-right:1.5px solid #E0F7FA; border-bottom:1.5px solid #E0F7FA; }
 .card.sem-compra { border-left:4px solid #F59E0B; border-top:1.5px solid #E0F7FA; border-right:1.5px solid #E0F7FA; border-bottom:1.5px solid #E0F7FA; }
-.cnome { font-size:13px; font-weight:600; color:#1A1A2E; margin-bottom:4px; line-height:1.3; }
+.cnome { font-size:14px; font-weight:700; color:#1A1A2E; margin-bottom:4px; line-height:1.3; }
 .cinfo { font-size:11px; color:#94A3B8; margin-bottom:8px; }
 .bdgs  { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
 .bdg   { font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; }
@@ -44,8 +44,8 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .bdg.comprou { background:#DBEAFE; color:#1E40AF; }
 .srow { display:flex; border-top:1px solid #F1F5F9; padding-top:8px; margin-top:4px; }
 .st2  { flex:1; text-align:center; }
-.stv  { font-size:15px; font-weight:600; color:#1A1A2E; }
-.stl  { font-size:9px; color:#94A3B8; display:block; margin-bottom:2px; }
+.stv  { font-size:16px; font-weight:700; color:#1A1A2E; }
+.stl  { font-size:10px; color:#94A3B8; display:block; margin-bottom:2px; }
 .stv.v { color:#16A34A; }
 .stv.z { color:#94A3B8; }
 .sel-nome { font-size:14px; font-weight:600; color:#1A1A2E; }
@@ -200,7 +200,7 @@ def carregar_vendas():
 
 
 # ── Estado da sessão ──────────────────────────────────────────────────────────
-for k, v in [("tela","selecao"),("vend",None)]:
+for k, v in [("tela","selecao"),("vend",None),("resumo_auth",False)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -235,6 +235,13 @@ if st.session_state.tela == "selecao":
       <div class="sub">{dia_hoje} · Semana {semana_hoje} do mês</div>
     </div>""", unsafe_allow_html=True)
 
+    # Botão resumo gerencial
+    col_r1, col_r2 = st.columns([3,1])
+    with col_r2:
+        if st.button("📊 Resumo Gerencial"):
+            st.session_state.tela = "resumo_login"
+            st.rerun()
+
     for v in vendedores:
         dfv = df_rot[df_rot["_vendedor"] == v]
         hoje_count = len(dfv[
@@ -264,6 +271,154 @@ if st.session_state.tela == "selecao":
                 st.session_state.tela = "painel"
                 st.rerun()
 
+
+# ════════════════════════════════════════════════════════════════════════════
+# TELA RESUMO LOGIN
+# ════════════════════════════════════════════════════════════════════════════
+elif st.session_state.tela == "resumo_login":
+    st.markdown(f"""
+    <div class="topbar">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <img src="data:image/jpeg;base64,{froneri_b64}" style="height:32px;object-fit:contain;">
+        <img src="data:image/png;base64,{logica_b64}" style="height:36px;object-fit:contain;border-radius:50%;">
+      </div>
+      <div class="nome">Resumo Gerencial</div>
+      <div class="sub">Acesso restrito</div>
+    </div>""", unsafe_allow_html=True)
+
+    senha = st.text_input("Digite a senha", type="password")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Entrar"):
+            if senha == "Froneri2026":
+                st.session_state.tela = "resumo"
+                st.rerun()
+            else:
+                st.error("Senha incorreta!")
+    with col2:
+        if st.button("← Voltar"):
+            st.session_state.tela = "selecao"
+            st.rerun()
+
+# ════════════════════════════════════════════════════════════════════════════
+# TELA RESUMO GERENCIAL
+# ════════════════════════════════════════════════════════════════════════════
+elif st.session_state.tela == "resumo":
+    st.markdown(f"""
+    <div class="topbar">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <img src="data:image/jpeg;base64,{froneri_b64}" style="height:32px;object-fit:contain;">
+        <img src="data:image/png;base64,{logica_b64}" style="height:36px;object-fit:contain;border-radius:50%;">
+      </div>
+      <div class="nome">Resumo Gerencial</div>
+      <div class="sub">Visão consolidada do mês</div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Métricas de vendas consolidadas ──────────────────────────────────────
+    imp_val_total = 0; imp_cx_total = 0
+    th_val_total  = 0; th_cx_total  = 0
+
+    try:
+        import requests, io
+        url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
+        r = requests.get(url, timeout=30)
+        df_v = pd.read_excel(io.BytesIO(r.content), sheet_name="VENDAS", engine="openpyxl")
+        df_v.columns = df_v.columns.str.strip()
+        df_v = df_v.dropna(how="all")
+
+        def achar2(nomes):
+            for n in nomes:
+                for c in df_v.columns:
+                    if n.lower() in str(c).lower():
+                        return c
+            return None
+
+        col_status = achar2(["status"])
+        col_cat    = achar2(["categoria","category"])
+        col_caixas = achar2(["somadecaixas","caixas"])
+        col_valor  = achar2(["somadevalor nf","valor nf","somadevalornf"])
+
+        df_v["_status"] = df_v[col_status].astype(str).str.strip() if col_status else "VENDA"
+        df_v["_cat"]    = df_v[col_cat].astype(str).str.upper().str.strip() if col_cat else ""
+        df_v["_cx"]     = df_v[col_caixas].apply(safe_int) if col_caixas else 0
+        df_v["_val"]    = df_v[col_valor].apply(parse_valor) if col_valor else 0
+
+        df_v = df_v[df_v["_status"] == "VENDA"]
+
+        imp = df_v[df_v["_cat"].str.contains("IMPULSO", na=False)]
+        th  = df_v[df_v["_cat"].str.contains("TAKE HOME|TH", na=False)]
+
+        imp_cx_total  = int(imp["_cx"].sum())
+        imp_val_total = imp["_val"].sum()
+        th_cx_total   = int(th["_cx"].sum())
+        th_val_total  = th["_val"].sum()
+    except Exception as e:
+        st.warning(f"Erro ao carregar vendas: {e}")
+
+    total_cx  = imp_cx_total + th_cx_total
+    total_val = imp_val_total + th_val_total
+
+    def fmt_brl(v):
+        return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+
+    st.markdown(f"""
+    <div class="slbl">Vendas do mês</div>
+    <div class="metrics">
+      <div class="mbox">
+        <div class="lbl">Impulso — Caixas</div>
+        <div class="val" style="color:#00838F;">{imp_cx_total:,}</div>
+        <div class="sub2">{fmt_brl(imp_val_total)}</div>
+      </div>
+      <div class="mbox">
+        <div class="lbl">Take Home — Caixas</div>
+        <div class="val" style="color:#00838F;">{th_cx_total:,}</div>
+        <div class="sub2">{fmt_brl(th_val_total)}</div>
+      </div>
+    </div>
+    <div class="metrics">
+      <div class="mbox" style="grid-column:span 2;">
+        <div class="lbl">Total Geral</div>
+        <div class="val" style="color:#1A1A2E;">{total_cx:,} cx</div>
+        <div class="sub2">{fmt_brl(total_val)}</div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Ruptura por vendedor ──────────────────────────────────────────────────
+    st.markdown('<div class="slbl">Ruptura por vendedor</div>', unsafe_allow_html=True)
+
+    RUPT_CATS = ["> 6 Meses","6 Meses","5 Meses","4 Meses","3 Meses","2 Meses","1 Mês","SEM KV"]
+
+    vendedores_r = sorted([v for v in df_rot["_vendedor"].dropna().unique() if v and v != "nan"])
+    for v in vendedores_r:
+        dfv = df_rot[df_rot["_vendedor"] == v]
+        total, em_rupt, pct = calc_ruptura(dfv)
+        cor = cor_ruptura(pct)
+
+        # Contagem por categoria de ruptura
+        rupt_str = dfv["_ruptura"].astype(str).str.strip()
+        cats_html = ""
+        for cat in RUPT_CATS:
+            n = len(dfv[rupt_str.str.lower() == cat.lower()])
+            if n > 0:
+                cls_cat = "rupt1" if "1" in cat else ("rupt2" if "2" in cat else ("rupt3" if any(x in cat for x in ["3","4","5","6","> 6"]) else "semkv"))
+                cats_html += f'<span class="bdg {cls_cat}" style="margin:2px;">{cat}: {n}</span>'
+
+        st.markdown(f"""
+<div class="card" style="margin-bottom:8px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <span style="font-size:13px;font-weight:700;color:#1A1A2E;">{v}</span>
+    <span style="font-size:16px;font-weight:700;color:{cor};">{pct}%</span>
+  </div>
+  <div style="height:5px;background:#E0F7FA;border-radius:2px;overflow:hidden;margin-bottom:8px;">
+    <div style="width:{pct}%;height:100%;background:{cor};border-radius:2px;"></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;">{cats_html}</div>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Voltar"):
+        st.session_state.tela = "selecao"
+        st.rerun()
 
 # ════════════════════════════════════════════════════════════════════════════
 # TELA 2 — PAINEL DO VENDEDOR
