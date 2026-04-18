@@ -226,7 +226,7 @@ elif st.session_state.tela == "painel":
     imp_total = sum(vendas.get(i,{}).get("impulso",0) for i in todos_ids)
     th_total  = sum(vendas.get(i,{}).get("th",0) for i in todos_ids)
     n_rupt    = len(dfv[~dfv["_ruptura"].isin(["C/ Compra","c/ compra","","nan","-","None"])])
-    n_dev     = len(dfv[dfv["_devedor"].str.lower().isin(["sim","s","yes","devedor"])])
+    n_dev     = len(dfv[dfv["_devedor"].astype(str).str.lower().str.strip().isin(["sim","s","yes","devedor"])])
 
     st.markdown(f"""
     <div class="topbar">
@@ -273,7 +273,7 @@ elif st.session_state.tela == "painel":
             th    = vd.get("th", 0)
             comprou = vd.get("comprou", False)
 
-            is_dev = dev.lower() in ["sim","s","yes","devedor"]
+            is_dev = str(dev).lower().strip() in ["sim","s","yes","devedor"]
             card_cls = "card dev" if is_dev else ("card sem-compra" if not comprou else "card")
 
             dev_badge = '<span class="bdg devedor">Devedor</span>' if is_dev else ""
