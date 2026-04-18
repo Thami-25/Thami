@@ -169,7 +169,10 @@ def carregar_vendas():
 @st.cache_data(ttl=3600)
 def carregar_roteiro():
     try:
-        df = pd.read_excel("https://docs.google.com/spreadsheets/d/1ewXcWuiLOCtv609Y-xKKg-qQwOuu21Bq/export?format=xlsx&sheet=ROTEIRIZAÇÕES", engine="openpyxl")
+        url = "https://docs.google.com/spreadsheets/d/1ewXcWuiLOCtv609Y-xKKg-qQwOuu21Bq/export?format=xlsx"
+        import requests, io
+        r = requests.get(url)
+        df = pd.read_excel(io.BytesIO(r.content), sheet_name=0, engine="openpyxl")
         df.columns = df.columns.str.strip()
         df["Sold"] = df["Sold"].astype(str).str.strip()
         df["Vendedor"] = df["Vendedor"].str.strip()
