@@ -154,7 +154,7 @@ def carregar_roteiro():
         df.columns = df.columns.str.strip()
         df = df.dropna(how="all")
 
-        col_id     = achar_col(df, ["customer nu","numero","número"]) or df.columns[0]
+        col_id     = achar_col(df, ["sold","customer nu","numero","número","codigo","código"]) or df.columns[0]
         col_nome   = achar_col(df, ["customer name","razao","razão","nome"]) or df.columns[1]
         col_bairro = achar_col(df, ["address line 4","bairro"]) or df.columns[3]
         col_cidade = achar_col(df, ["city","cidade"]) or df.columns[4]
@@ -190,7 +190,7 @@ def carregar_vendas():
         df.columns = df.columns.str.strip()
         df = df.dropna(how="all")
 
-        col_id     = achar_col(df, ["customer nu","numero","número"]) or df.columns[0]
+        col_id     = achar_col(df, ["sold","customer nu","numero","número","codigo","código"]) or df.columns[0]
         col_status = achar_col(df, ["status"])
         col_cat    = achar_col(df, ["categoria","category"])
         col_caixas = achar_col(df, ["somadecaixas","caixas","qtd"])
