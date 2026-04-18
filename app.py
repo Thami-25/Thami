@@ -167,7 +167,7 @@ def carregar_roteiro():
 
         # Cancelamento nao e utilizado como filtro
 
-        df["_id"]       = df[col_id].astype(str).str.strip()
+        df["_id"]       = df[col_id].astype(str).str.strip().str.lstrip("0")
         df["_nome"]     = df[col_nome].astype(str).str.strip() if col_nome else ""
         df["_bairro"]   = df[col_bairro].astype(str).str.strip() if col_bairro else ""
         df["_cidade"]   = df[col_cidade].astype(str).str.strip() if col_cidade else ""
@@ -195,7 +195,7 @@ def carregar_vendas():
         col_cat    = achar_col(df, ["categoria","category"])
         col_caixas = achar_col(df, ["somadecaixas","caixas","qtd"])
 
-        df["_id"]     = df[col_id].astype(str).str.strip()
+        df["_id"]     = df[col_id].astype(str).str.strip().str.lstrip("0")
         df["_status"] = df[col_status].astype(str).str.strip() if col_status else "VENDA"
         df["_cat"]    = df[col_cat].astype(str).str.strip().str.upper() if col_cat else ""
         df["_caixas"] = df[col_caixas].apply(safe_int) if col_caixas else 0
