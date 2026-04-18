@@ -14,11 +14,9 @@ st.markdown("""
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .block-container { padding: 1rem 1rem 3rem; max-width: 500px; margin: auto; }
 #MainMenu, footer, header { visibility: hidden; }
-
 .topbar { background:#1A1A2E; border-radius:14px; padding:16px 18px 14px; margin-bottom:16px; color:#fff; }
 .topbar .nome { font-size:18px; font-weight:600; }
 .topbar .sub  { font-size:12px; color:#94A3B8; margin-top:3px; }
-
 .metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
 .mbox { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px 12px; text-align:center; }
 .mbox .val { font-size:22px; font-weight:600; color:#1A1A2E; }
@@ -28,12 +26,8 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .mbox.verde  .val { color:#16A34A; }
 .prog { height:4px; background:#E2E8F0; border-radius:2px; margin-top:6px; overflow:hidden; }
 .progf { height:100%; border-radius:2px; }
-
-.slbl { font-size:11px; font-weight:600; color:#64748B; text-transform:uppercase;
-        letter-spacing:.06em; margin:16px 0 8px; }
-
-.card { background:#fff; border:1px solid #E2E8F0; border-radius:14px;
-        padding:13px 14px; margin-bottom:9px; }
+.slbl { font-size:11px; font-weight:600; color:#64748B; text-transform:uppercase; letter-spacing:.06em; margin:16px 0 8px; }
+.card { background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:13px 14px; margin-bottom:9px; }
 .card.dev { border-left:3px solid #DC2626; }
 .cnome { font-size:13px; font-weight:600; color:#1A1A2E; margin-bottom:8px; line-height:1.3; }
 .bdgs  { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
@@ -45,30 +39,22 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .bdg.novo   { background:#EDE9FE; color:#5B21B6; }
 .bdg.semkv  { background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; }
 .bdg.rupt   { background:#FEE2E2; color:#991B1B; }
-
 .srow { display:flex; border-top:1px solid #F1F5F9; padding-top:8px; }
 .st2  { flex:1; text-align:center; }
 .stv  { font-size:14px; font-weight:600; color:#1A1A2E; }
 .stl  { font-size:9px; color:#94A3B8; display:block; margin-bottom:2px; }
 .stv.v { color:#16A34A; }
 .stv.r { color:#DC2626; }
-
-.frow { display:flex; justify-content:space-between; align-items:center;
-        border-top:1px solid #F1F5F9; padding-top:8px; margin-top:6px;
-        font-size:11px; color:#64748B; flex-wrap:wrap; gap:4px; }
+.frow { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #F1F5F9; padding-top:8px; margin-top:6px; font-size:11px; color:#64748B; flex-wrap:wrap; gap:4px; }
 .dval { color:#DC2626; font-weight:600; }
 .psim { color:#16A34A; font-weight:600; }
 .pnao { color:#DC2626; font-weight:600; }
-.tbdg { font-size:10px; padding:2px 8px; background:#F1F5F9;
-        border-radius:20px; color:#475569; font-weight:600; }
-
+.tbdg { font-size:10px; padding:2px 8px; background:#F1F5F9; border-radius:20px; color:#475569; font-weight:600; }
 .sel-nome { font-size:14px; font-weight:600; color:#1A1A2E; }
 .sel-sub  { font-size:12px; color:#64748B; margin-top:2px; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
 def safe_int(v):
     try: return int(float(v))
     except: return 0
@@ -101,11 +87,9 @@ def card_html(row):
     iab   = io_ - ir
     to_   = safe_int(row.get("TH Obj.",0))
     tr    = safe_int(row.get("TH Real.",0))
-
     rupt_b = '<span class="bdg rupt">Ruptura</span>' if iab > 0 else ""
     pic_h  = f'Picolé: <span class="psim">vendido</span>' if pic=="Sim" else f'Picolé: <span class="pnao">não vendido</span>'
     dev_h  = f'<br><span class="dval">Devedor: R$ {dev:,.2f}</span>' if dev > 0 else ""
-
     return f"""
 <div class="{'card dev' if dev>0 else 'card'}">
   <div class="cnome">{nome}</div>
@@ -126,16 +110,24 @@ def card_html(row):
   </div>
 </div>"""
 
-
-# ── Session state ─────────────────────────────────────────────────────────────
 for k, v in [("tela","upload"),("df",None),("vendedor",None)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
+def carregar_excel(arq):
+    try:
+        df = pd.read_excel(arq, sheet_name="PAINEL", header=0, engine="openpyxl")
+        df.columns = df.columns.str.strip()
+        if "Código Cliente" not in df.columns:
+            df = pd.read_excel(arq, sheet_name="PAINEL", header=1, engine="openpyxl")
+            df.columns = df.columns.str.strip()
+        df = df.dropna(subset=["Código Cliente"])
+        df = df[df["Código Cliente"].astype(str).str.strip() != ""]
+        df["Código Cliente"] = df["Código Cliente"].astype(str).str.strip()
+        return df, None
+    except Exception as e:
+        return None, str(e)
 
-# ════════════════════════════════════════════════════════════════════════════
-# TELA 1 — UPLOAD
-# ════════════════════════════════════════════════════════════════════════════
 if st.session_state.tela == "upload":
     st.markdown("""
     <div class="topbar">
@@ -143,53 +135,35 @@ if st.session_state.tela == "upload":
       <div class="sub">Faça o upload do arquivo semanal para começar</div>
     </div>
     """, unsafe_allow_html=True)
-
-    arq = st.file_uploader(
-        "Selecione o arquivo **Painel_de_Vendas.xlsx**",
-        type=["xlsx"]
-    )
-
+    arq = st.file_uploader("Selecione o arquivo **Painel_de_Vendas.xlsx**", type=["xlsx"])
     if arq:
-        try:
-            df = pd.read_excel(arq, sheet_name="PAINEL", engine="openpyxl")
-            df.columns = df.columns.str.strip()
-            df = df.dropna(subset=["Código Cliente"])
-            df["Código Cliente"] = df["Código Cliente"].astype(str).str.strip()
-            st.session_state.df = df
+        df, erro = carregar_excel(arq)
+        if erro:
+            st.error(f"Erro ao ler o arquivo: {erro}")
+        else:
             st.success(f"✅ {len(df)} registros carregados!")
+            st.session_state.df = df
             if st.button("Continuar →"):
                 st.session_state.tela = "selecao"
                 st.rerun()
-        except Exception as e:
-            st.error(f"Erro ao ler o arquivo: {e}")
 
-
-# ════════════════════════════════════════════════════════════════════════════
-# TELA 2 — SELEÇÃO DE VENDEDOR
-# ════════════════════════════════════════════════════════════════════════════
 elif st.session_state.tela == "selecao":
     df = st.session_state.df
     vendedores = sorted(df["Vendedor"].dropna().unique().tolist())
-
     st.markdown("""
     <div class="topbar">
       <div class="nome">Olá! 👋</div>
       <div class="sub">Selecione seu nome para continuar</div>
     </div>
     """, unsafe_allow_html=True)
-
     for v in vendedores:
         dfv = df[df["Vendedor"] == v]
         n   = len(dfv)
-        nr  = int(
-            (dfv["Impulso Obj."].fillna(0).astype(float) >
-             dfv["Impulso Real."].fillna(0).astype(float)).sum()
-        )
+        nr  = int((dfv["Impulso Obj."].fillna(0).astype(float) > dfv["Impulso Real."].fillna(0).astype(float)).sum())
         col1, col2 = st.columns([5,1])
         with col1:
             st.markdown(f"""
-            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;
-                        padding:14px 16px;margin-bottom:8px;">
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:14px 16px;margin-bottom:8px;">
               <div class="sel-nome">{v}</div>
               <div class="sel-sub">{n} clientes · {nr} rupturas</div>
             </div>""", unsafe_allow_html=True)
@@ -199,39 +173,29 @@ elif st.session_state.tela == "selecao":
                 st.session_state.vendedor = v
                 st.session_state.tela = "painel"
                 st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
 
-
-# ════════════════════════════════════════════════════════════════════════════
-# TELA 3 — PAINEL
-# ════════════════════════════════════════════════════════════════════════════
 elif st.session_state.tela == "painel":
     df_all = st.session_state.df
     vend   = st.session_state.vendedor
     df     = df_all[df_all["Vendedor"] == vend].copy()
-
-    datas     = sorted(df["Data Visita"].dropna().unique())
-    hoje_dt   = datas[-1] if len(datas) >= 1 else None
-    ontem_dt  = datas[-2] if len(datas) >= 2 else None
-    df_hoje   = df[df["Data Visita"] == hoje_dt] if hoje_dt is not None else df.iloc[0:0]
-    df_ontem  = df[df["Data Visita"] == ontem_dt] if ontem_dt is not None else df.iloc[0:0]
-
+    datas  = sorted(df["Data Visita"].dropna().unique())
+    hoje_dt  = datas[-1] if len(datas) >= 1 else None
+    ontem_dt = datas[-2] if len(datas) >= 2 else None
+    df_hoje  = df[df["Data Visita"] == hoje_dt] if hoje_dt is not None else df.iloc[0:0]
+    df_ontem = df[df["Data Visita"] == ontem_dt] if ontem_dt is not None else df.iloc[0:0]
     imp_obj  = df["Impulso Obj."].fillna(0).astype(float).sum()
     imp_real = df["Impulso Real."].fillna(0).astype(float).sum()
     th_obj   = df["TH Obj."].fillna(0).astype(float).sum()
     th_real  = df["TH Real."].fillna(0).astype(float).sum()
     pct_imp  = (imp_real/imp_obj*100) if imp_obj > 0 else 0
     pct_th   = (th_real/th_obj*100)   if th_obj  > 0 else 0
-    n_rupt   = int((df["Impulso Obj."].fillna(0).astype(float) >
-                    df["Impulso Real."].fillna(0).astype(float)).sum())
+    n_rupt   = int((df["Impulso Obj."].fillna(0).astype(float) > df["Impulso Real."].fillna(0).astype(float)).sum())
     picoles  = int((df["Picolé Campanha"].fillna("Não").str.strip() == "Sim").sum())
     devedores= df[df["Devedor Valor R$"].fillna(0).astype(float) > 0]
-
     ci = "verde" if pct_imp >= 75 else "alerta"
     ct = "verde" if pct_th  >= 75 else "alerta"
     ci_cor = "#1D9E75" if pct_imp >= 75 else "#DC2626"
     ct_cor = "#1D9E75" if pct_th  >= 75 else "#DC2626"
-
     st.markdown(f"""
     <div class="topbar">
       <div class="nome">{vend}</div>
@@ -262,27 +226,22 @@ elif st.session_state.tela == "painel":
       </div>
     </div>
     """, unsafe_allow_html=True)
-
     if len(devedores) > 0:
         total_dev = devedores["Devedor Valor R$"].astype(float).sum()
         st.warning(f"⚠️ {len(devedores)} cliente(s) devedor(es) — Total: R$ {total_dev:,.2f}")
-
     aba_hoje, aba_ontem, aba_resumo = st.tabs(["Hoje", "Ontem", "Resumo"])
-
     with aba_hoje:
         st.markdown(f'<div class="slbl">Roteiro do dia · {len(df_hoje)} clientes</div>', unsafe_allow_html=True)
         for _, row in df_hoje.iterrows():
             st.markdown(card_html(row), unsafe_allow_html=True)
         if df_hoje.empty:
             st.info("Nenhuma visita registrada para hoje.")
-
     with aba_ontem:
         st.markdown(f'<div class="slbl">Visitas anteriores · {len(df_ontem)} clientes</div>', unsafe_allow_html=True)
         for _, row in df_ontem.iterrows():
             st.markdown(card_html(row), unsafe_allow_html=True)
         if df_ontem.empty:
             st.info("Nenhuma visita anterior registrada.")
-
     with aba_resumo:
         st.markdown('<div class="slbl">Situação da carteira</div>', unsafe_allow_html=True)
         tipos = df["Ruptura (tipo)"].fillna("Sem info").value_counts()
@@ -294,7 +253,6 @@ elif st.session_state.tela == "painel":
                 <span style="font-weight:600;color:#1A1A2E;">{qtd}</span>
               </div>
             </div>""", unsafe_allow_html=True)
-
         if len(devedores) > 0:
             st.markdown('<div class="slbl">Devedores</div>', unsafe_allow_html=True)
             for _, row in devedores.iterrows():
@@ -306,7 +264,6 @@ elif st.session_state.tela == "painel":
                     <span class="dval">R$ {val:,.2f}</span>
                   </div>
                 </div>""", unsafe_allow_html=True)
-
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("← Trocar vendedor"):
         st.session_state.tela = "selecao"
