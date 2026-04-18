@@ -204,7 +204,7 @@ def carregar_vendas():
         resumo = {}
         for sid, grp in df.groupby("_id"):
             imp = int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum())
-            th  = int(grp[grp["_cat"].str.contains("TAKE HOME|TH", na=False)]["_caixas"].sum())
+            th  = int(grp[~grp["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum())
             comprou = len(grp[grp["_status"] == "VENDA"]) > 0
             resumo[sid] = {"impulso": imp, "th": th, "comprou": comprou}
         return resumo, None
@@ -338,7 +338,7 @@ elif st.session_state.tela == "resumo":
         dfr["_vl"] = dfr[cvl].apply(parse_valor) if cvl else 0.0
         # Soma direta — devoluções já vêm com valor negativo no Sheets
         imp = dfr[dfr["_c"].str.contains("IMPULSO", na=False)]
-        th  = dfr[dfr["_c"].str.contains("TAKE HOME|TH", na=False)]
+        th  = dfr[dfr["_c"].str.contains("TAKE HOME|NOBRELLI|MONDELEZ|NESTL|PRIVATE|CANAL PRO|GAROTO", na=False) & ~dfr["_c"].str.contains("IMPULSO", na=False)]
 
         imp_cx = int(imp["_cx"].sum())
         imp_vl = imp["_vl"].sum()
