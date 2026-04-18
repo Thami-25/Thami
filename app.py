@@ -208,7 +208,7 @@ elif st.session_state.tela == "painel":
     pic_col  = cols["picole"]
     dev_col  = cols["devedor"]
     picoles  = int((dfv[pic_col].fillna("Não").str.strip() == "Sim").sum()) if pic_col else 0
-    devedores= dfv[dfv[dev_col].fillna(0).astype(float) > 0] if dev_col else dfv.iloc[0:0]
+    devedores= dfv[dfv[dev_col].apply(safe_float) > 0] if dev_col else dfv.iloc[0:0]
 
     ci = "verde" if pct_imp >= 75 else "alerta"
     ct = "verde" if pct_th  >= 75 else "alerta"
@@ -225,7 +225,7 @@ elif st.session_state.tela == "painel":
     </div>""", unsafe_allow_html=True)
 
     if len(devedores) > 0:
-        total_dev = devedores[dev_col].astype(float).sum()
+        total_dev = devedores[dev_col].apply(safe_float).sum()
         st.warning(f"⚠️ {len(devedores)} cliente(s) devedor(es) — Total: R$ {total_dev:,.2f}")
 
     aba_hoje, aba_ontem, aba_resumo = st.tabs(["Hoje", "Ontem", "Resumo"])
