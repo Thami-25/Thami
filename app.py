@@ -201,12 +201,18 @@ def carregar_vendas():
         df["_caixas"] = df[col_caixas].apply(safe_int) if col_caixas else 0
 
         # Soma direta por cliente — devoluções já negativas
+        def fmt_brl_v(v):
+            s = f"{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+            return f"R$ {s}"
+
         resumo = {}
         for sid, grp in df.groupby("_id"):
-            imp = int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum())
-            th  = int(grp[~grp["_cat"].str.contains("IMPULSO", na=False)]["_caixas"].sum())
+            imp    = int(grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_cx"].sum())
+            th     = int(grp[~grp["_cat"].str.contains("IMPULSO", na=False)]["_cx"].sum())
+            imp_vl = grp[grp["_cat"].str.contains("IMPULSO", na=False)]["_vl"].sum()
+            th_vl  = grp[~grp["_cat"].str.contains("IMPULSO", na=False)]["_vl"].sum()
             comprou = len(grp[grp["_status"] == "VENDA"]) > 0
-            resumo[sid] = {"impulso": imp, "th": th, "comprou": comprou}
+            resumo[sid] = {"impulso": imp, "th": th, "imp_vl": imp_vl, "th_vl": th_vl, "comprou": comprou}
         return resumo, None
     except Exception as e:
         return {}, str(e)
@@ -413,9 +419,15 @@ elif st.session_state.tela == "painel":
     clientes_hoje  = dfv[(dfv["_dia"]==dia_hoje)  & dfv["_freq"].apply(lambda f: visita_hoje(f, semana_hoje))]
     clientes_ontem = dfv[(dfv["_dia"]==dia_ontem) & dfv["_freq"].apply(lambda f: visita_hoje(f, semana_ontem))]
 
-    todos_ids  = set(dfv["_id"].tolist())
-    imp_total  = sum(vendas.get(i,{}).get("impulso",0) for i in todos_ids)
-    th_total   = sum(vendas.get(i,{}).get("th",0) for i in todos_ids)
+    todos_ids   = set(dfv["_id"].tolist())
+    imp_total   = sum(vendas.get(i,{}).get("impulso",0) for i in todos_ids)
+    th_total    = sum(vendas.get(i,{}).get("th",0) for i in todos_ids)
+    imp_vl_total = sum(vendas.get(i,{}).get("imp_vl",0.0) for i in todos_ids)
+    th_vl_total  = sum(vendas.get(i,{}).get("th_vl",0.0) for i in todos_ids)
+
+    def fmt_brl_v(v):
+        s = f"{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+        return f"R$ {s}"
     n_dev      = len(dfv[dfv["_devedor"].apply(is_devedor)])
     total, em_rupt, pct_rupt = calc_ruptura(dfv)
     cor = cor_ruptura(pct_rupt)
@@ -433,13 +445,13 @@ elif st.session_state.tela == "painel":
     <div class="metrics">
       <div class="mbox {'verde' if imp_total>0 else 'alerta'}">
         <div class="lbl">Impulso mês</div>
-        <div class="val">{imp_total}</div>
-        <div class="sub2">caixas vendidas</div>
+        <div class="val">{imp_total} cx</div>
+        <div class="sub2">{fmt_brl_v(imp_vl_total)}</div>
       </div>
       <div class="mbox {'verde' if th_total>0 else 'alerta'}">
         <div class="lbl">Take Home mês</div>
-        <div class="val">{th_total}</div>
-        <div class="sub2">caixas vendidas</div>
+        <div class="val">{th_total} cx</div>
+        <div class="sub2">{fmt_brl_v(th_vl_total)}</div>
       </div>
       <div class="mbox {cls}">
         <div class="lbl">% Ruptura</div>
@@ -490,12 +502,12 @@ elif st.session_state.tela == "painel":
   <div class="cinfo">{bairro} · {cidade} · #{sid}</div>
   <div class="bdgs">{badge_ruptura(rupt)}{dev_bdg}{comp_bdg}</div>
   <div class="srow">
-    <div class="st2"><span class="stl">Impulso mês</span><span class="{imp_cls}">{imp} cx</span></div>
-    <div class="st2"><span class="stl">Take Home mês</span><span class="{th_cls}">{th} cx</span></div>
+    <div class="st2"><span class="stl">Impulso</span><span class="{imp_cls}">{imp} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("imp_vl",0))}</span></div>
+    <div class="st2"><span class="stl">Take Home</span><span class="{th_cls}">{th} cx</span><span class="stl" style="margin-top:2px;">{fmt_brl_v(vd.get("th_vl",0))}</span></div>
   </div>
 </div>""", unsafe_allow_html=True)
 
-    aba_hoje, aba_ontem, aba_semana = st.tabs(["Hoje", "Ontem", "Semana toda"])
+    aba_hoje, aba_ontem, aba_semana, aba_rupt = st.tabs(["Hoje", "Ontem", "Semana toda", "📋 Ruptura"])
 
     with aba_hoje:
         render_clientes(clientes_hoje, f"Roteiro de hoje · {dia_hoje}")
@@ -510,6 +522,41 @@ elif st.session_state.tela == "painel":
             cl  = dfv[(dfv["_dia"]==dia) & dfv["_freq"].apply(lambda f: visita_hoje(f, sem))]
             if not cl.empty:
                 render_clientes(cl, dia)
+
+    with aba_rupt:
+        st.markdown('<div class="slbl">Todos os clientes em ruptura</div>', unsafe_allow_html=True)
+        RUPT_ORDER = ["> 6 Meses","6 Meses","5 Meses","4 Meses","3 Meses","2 Meses","1 Mês","SEM KV"]
+        RUPT_CLS_MAP = {"> 6 Meses":"rupt3","6 Meses":"rupt3","5 Meses":"rupt3",
+                        "4 Meses":"rupt3","3 Meses":"rupt3","2 Meses":"rupt2",
+                        "1 Mês":"rupt1","SEM KV":"rupt2"}
+
+        df_em_rupt = dfv[~dfv["_ruptura"].astype(str).str.strip().str.lower().apply(
+            lambda x: any(p in x for p in ["c/ compra","c/compra","cliente novo"]) or x in ["","nan","none","-"]
+        )].copy()
+
+        # Sort by ruptura severity
+        df_em_rupt["_rupt_ord"] = df_em_rupt["_ruptura"].astype(str).str.strip().apply(
+            lambda x: RUPT_ORDER.index(x) if x in RUPT_ORDER else 99
+        )
+        df_em_rupt = df_em_rupt.sort_values("_rupt_ord")
+
+        if df_em_rupt.empty:
+            st.success("Nenhum cliente em ruptura! 🎉")
+        else:
+            st.markdown(f'<div style="font-size:12px;color:#64748B;margin-bottom:8px;">{len(df_em_rupt)} clientes sem compra</div>', unsafe_allow_html=True)
+            for _, row in df_em_rupt.iterrows():
+                rupt  = str(row["_ruptura"]).strip()
+                cls   = RUPT_CLS_MAP.get(rupt, "rupt2")
+                sid   = row["_id"]
+                nome  = row["_nome"]
+                st.markdown(f"""
+<div style="background:#fff;border:1px solid #E0F7FA;border-radius:10px;padding:10px 14px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;">
+  <div>
+    <div style="font-size:13px;font-weight:600;color:#1A1A2E;">{nome}</div>
+    <div style="font-size:11px;color:#94A3B8;">#{sid}</div>
+  </div>
+  <span class="bdg {cls}">{rupt}</span>
+</div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
